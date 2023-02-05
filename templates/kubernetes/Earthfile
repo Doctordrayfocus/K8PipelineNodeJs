@@ -1,0 +1,24 @@
+VERSION 0.6
+
+NODEJSAPP:
+	COMMAND
+    ARG service='sample'
+    ARG env='prod'
+    ARG dir="./$service/environments/$env"
+    ARG file="$dir/app-template.yaml"
+    ARG version=0.1
+    ARG httpsDomain1=''
+    ARG OUTPUT="apiVersion: roof.ceedcap.io/v1
+kind: RoofAppTemplate
+metadata:
+  name: ${service}
+spec:
+  serviceName: '${service}'
+  environment: '${env}'
+  deploymentReplicas: 1
+  imageVersion: '${version}'
+  configsToUse: 'nodejs-default,cert-manager-http,cert-manager-http/issuer-1'
+  httpsDomain1: '${httpsDomain1}'
+"
+	RUN mkdir -p $dir
+  RUN echo "$OUTPUT" > "$file"

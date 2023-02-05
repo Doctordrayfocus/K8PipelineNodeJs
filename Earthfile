@@ -1,16 +1,14 @@
 VERSION 0.6
 FROM bash:4.4
-IMPORT ./templates/nodejs/kubernetes AS nodejs_kubernetes_engine
-IMPORT ./templates/nodejs/docker AS nodejs_docker_engine
-IMPORT ./templates/php/kubernetes AS php_kubernetes_engine
-IMPORT ./templates/php/docker AS php_docker_engine
+IMPORT ./templates/kubernetes AS nodejs_kubernetes_engine
+IMPORT ./templates/docker AS nodejs_docker_engine
 WORKDIR /build-arena
 
 install:
 	ARG service='sample'
 	ARG envs='dev,prod'
 	ARG version='0.1'
-	ARG docker_registry='drayfocus/earthly-sample'
+	ARG docker_registry='${DockerRegistry}'
 	ARG apptype='nodejs'
 
 	WORKDIR /setup-arena
@@ -23,53 +21,33 @@ install:
 	FOR --sep="," env IN "$envs"	
 		ENV dir="./$service/environments/$env"
 		RUN echo "Creating environment $env"
-		
-		IF [ "$apptype" = "nodejs" ]
-			RUN mkdir -p $dir
-			DO nodejs_kubernetes_engine+DEPLOYMENT --service=$service --env=$env --dir=$dir --version=$version --docker_registry=$docker_registry
-			DO nodejs_kubernetes_engine+SERVICE --service=$service --env=$env --dir=$dir
-			DO nodejs_kubernetes_engine+NAMESPACE --service=$service --env=$env --dir=$dir
-		END
-
-		IF [ "$apptype" = "php" ]
-			RUN mkdir -p $dir $dir/extras-$service
-			DO php_kubernetes_engine+LARAVELAPP --service=$service --env=$env --version=$version 
-			DO php_kubernetes_engine+CONFIGMAP --service=$service --env=$env 
-			DO php_kubernetes_engine+SECRETS --service=$service --env=$env 
-		END
-
+	
+		RUN mkdir -p $dir
+		DO nodejs_kubernetes_engine+DEPLOYMENT --service=$service --env=$env --dir=$dir --version=$version --docker_registry=$docker_registry
+		DO nodejs_kubernetes_engine+SERVICE --service=$service --env=$env --dir=$dir
+		DO nodejs_kubernetes_engine+NAMESPACE --service=$service --env=$env --dir=$dir
 	END
 
 	SAVE ARTIFACT $service AS LOCAL ${service}
 
 build:
 	ARG version='0.1'
-	ARG docker_registry='drayfocus'
+	ARG docker_registry='${DockerRegistry}'
 	ARG service='sample'
 	ARG envs='dev,prod'
 	ARG node_env="developement"
 	ARG apptype='nodejs'
 
-	IF [ "$apptype" = "nodejs" ]
-		BUILD nodejs_docker_engine+node-app --version=$version --docker_registry=$docker_registry --service=$service --node_env=$node_env
-	END
-	IF [ "$apptype" = "php" ]
-		BUILD php_docker_engine+fpm-server --version=$version --docker_registry=$docker_registry --service=$service 
-		BUILD php_docker_engine+web-server --version=$version --docker_registry=$docker_registry --service=$service
-		BUILD php_docker_engine+cron --version=$version --docker_registry=$docker_registry --service=$service 
-	END
+	
+	BUILD nodejs_docker_engine+node-app --version=$version --docker_registry=$docker_registry --service=$service --node_env=$node_env
+
 	
 	## Update deployment.yaml with latest versions
 	FOR --sep="," env IN "$envs"	
-		IF [ "$apptype" = "nodejs" ]
-			DO nodejs_kubernetes_engine+DEPLOYMENT --service=$service --env=$env --version=$version --docker_registry=$docker_registry
-			SAVE ARTIFACT $service/environments/$env/deployment.yaml AS LOCAL ${service}/environments/$env/deployment.yaml 
-		END
-
-		IF [ "$apptype" = "php" ]
-			DO php_kubernetes_engine+LARAVELAPP --service=$service --version=$version 
-			SAVE ARTIFACT $service/environments/$env/app-template.yaml AS LOCAL ${service}/environments/$env/app-template.yaml
-		END
+		
+		DO nodejs_kubernetes_engine+DEPLOYMENT --service=$service --env=$env --version=$version --docker_registry=$docker_registry
+		SAVE ARTIFACT $service/environments/$env/deployment.yaml AS LOCAL ${service}/environments/$env/deployment.yaml 
+		
 	END
 
 
@@ -91,20 +69,12 @@ deploy:
 	RUN kubectl config get-contexts	
 
 	## deploy kubernetes configs
-	IF [ "$apptype" = "nodejs" ]
-		RUN kubectl apply -f environments/${env}/namespace.yaml
-		RUN kubectl apply -f environments/${env}
-	END
-
-	IF [ "$apptype" = "php" ]
-		RUN kubectl apply -f environments/${env}/app-template.yaml
-		RUN kubectl cp environments/${env}/extras-$service $(kubectl get pod -l app=apptemplate-controller -o jsonpath="{.items[0].metadata.name}"):/usr/src/app/configs
-	END
-	
+	RUN kubectl cp $service/environments/${envs}/extras-$service $(kubectl get pod -l app=pipelineapptemplate-controller -o jsonpath="{.items[0].metadata.name}"):/usr/src/app/configs
+	RUN kubectl apply -f $service/environments/${envs}/app-template.yaml
 
 auto-deploy:
 	ARG version='0.1'
-	ARG docker_registry='drayfocus'
+	ARG docker_registry='${DockerRegistry}'
 	ARG service='sample'
 	ARG env='dev'
 	ARG apptype='nodejs'
