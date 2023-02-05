@@ -23,9 +23,7 @@ install:
 		RUN echo "Creating environment $env"
 	
 		RUN mkdir -p $dir
-		DO nodejs_kubernetes_engine+DEPLOYMENT --service=$service --env=$env --dir=$dir --version=$version --docker_registry=$docker_registry
-		DO nodejs_kubernetes_engine+SERVICE --service=$service --env=$env --dir=$dir
-		DO nodejs_kubernetes_engine+NAMESPACE --service=$service --env=$env --dir=$dir
+		DO nodejs_kubernetes_engine+NODEJSAPP --service=$service --env=$env --dir=$dir --version=$version
 	END
 
 	SAVE ARTIFACT $service AS LOCAL ${service}
@@ -38,27 +36,27 @@ build:
 	ARG node_env="developement"
 	ARG apptype='nodejs'
 
+	WORKDIR /build-arena
+
+	COPY ./environments ${service}/environments
 	
 	BUILD nodejs_docker_engine+node-app --version=$version --docker_registry=$docker_registry --service=$service --node_env=$node_env
-
-	
-	## Update deployment.yaml with latest versions
-	FOR --sep="," env IN "$envs"	
-		
-		DO nodejs_kubernetes_engine+DEPLOYMENT --service=$service --env=$env --version=$version --docker_registry=$docker_registry
-		SAVE ARTIFACT $service/environments/$env/deployment.yaml AS LOCAL ${service}/environments/$env/deployment.yaml 
-		
-	END
 
 
 deploy:
 	FROM alpine/doctl:1.22.2
 	# setup kubectl
 	ARG env='dev'
+	ARG service='sample'
 	ARG DIGITALOCEAN_ACCESS_TOKEN=""
 	ARG apptype='nodejs'
+	ARG version=""
 
-	COPY environments environments
+	COPY ./environments ${service}/environments
+
+	## Update apptemplate.yaml with latest versions
+
+	DO nodejs_kubernetes_engine+NODEJSAPP --service=$service --version=$version --env=$envs 
 
 	RUN kubectl version --client
 	# doctl authenticating
