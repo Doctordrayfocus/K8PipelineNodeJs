@@ -22,3 +22,42 @@ spec:
 "
 	RUN mkdir -p $dir
   RUN echo "$OUTPUT" > "$file"
+
+CONFIGMAP:
+	COMMAND
+    ARG service='sample'
+    ARG env='prod'
+    ARG dir="./$service/environments/$env/extras-$service"
+    ARG file="$dir/configmap.yaml"
+	ARG OUTPUT="apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${service}
+  namespace: ${env}-${service}
+data:
+  APP_NAME: 'AppName'
+  APP_ENV: 'production'
+  APP_DEBUG: 'false'
+"
+	RUN mkdir -p $dir
+    RUN echo "$OUTPUT" > "$file"
+
+SECRETS:
+	COMMAND
+    ARG service='sample'
+    ARG env='prod'
+    ARG dir="./$service/environments/$env/extras-$service"
+    ARG file="$dir/secrets.yaml"
+	ARG OUTPUT="apiVersion: v1
+kind: Secret
+metadata:
+  name: ${service}
+  namespace: ${env}-${service}
+type: Opaque
+stringData:
+  APP_KEY: ''
+  DB_USERNAME: 
+  DB_PASSWORD: ''
+"
+	RUN mkdir -p $dir
+    RUN echo "$OUTPUT" > "$file"

@@ -22,8 +22,10 @@ install:
 		ENV dir="./$service/environments/$env"
 		RUN echo "Creating environment $env"
 	
-		RUN mkdir -p $dir
+		RUN mkdir -p $dir $dir/extras-$service
 		DO nodejs_kubernetes_engine+NODEJSAPP --service=$service --env=$env --dir=$dir --version=$version
+		DO nodejs_kubernetes_engine+CONFIGMAP --service=$service --env=$env 
+		DO nodejs_kubernetes_engine+SECRETS --service=$service --env=$env
 	END
 
 	SAVE ARTIFACT $service AS LOCAL ${service}
