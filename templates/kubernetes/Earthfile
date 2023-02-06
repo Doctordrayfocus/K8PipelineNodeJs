@@ -17,7 +17,7 @@ spec:
   environment: '${env}'
   deploymentReplicas: 1
   imageVersion: '${version}'
-  configsToUse: 'nodejs-default,cert-manager-http,cert-manager-http/issuer-1'
+  configsToUse: '${configToUse}'
   httpsDomain1: '${httpsDomain1}'
 "
 	RUN mkdir -p $dir
