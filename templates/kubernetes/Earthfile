@@ -8,8 +8,8 @@ NODEJSAPP:
     ARG file="$dir/app-template.yaml"
     ARG version=0.1
     ARG httpsDomain1=''
-    ARG OUTPUT="apiVersion: roof.ceedcap.io/v1
-kind: RoofAppTemplate
+    ARG OUTPUT="apiVersion: template.k8spipeline.io/v1
+kind: K8sAppTemplate
 metadata:
   name: ${service}
 spec:
