@@ -2,45 +2,33 @@ VERSION 0.6
 FROM bash:4.4
 WORKDIR /setup-arena
 
-
-project:
-	# clone project
-	GIT CLONE https://github.com/Doctordrayfocus/vue-typescript-template.git nodejs
-	RUN rm nodejs/package-lock.json
-	SAVE ARTIFACT nodejs /nodejs
-
-node-app:
-	# We need node js to install and run the app
-	FROM node:14.14.0-alpine3.12
+web-server:
+	# We need an nginx container which can pass requests to our nodejs container,
+	# as well as serve any static content.
+	FROM hoosin/alpine-nginx-nodejs:latest
 
 	ARG version='0.1'
 	ARG docker_registry='drayfocus/earthly-sample'
 	ARG service='sample'
-	ARG node_env='development'
 
-	# First, create the application directory
-	RUN mkdir -p /app
+	# Create app directory
+	WORKDIR /usr/src/app
 
 	## Then copy our app source code into the image
-	COPY +project/nodejs  /app
+	COPY  ./app .
 
-	# Next, set our working directory
-	WORKDIR /app
+	## Build app 
+	RUN cd /usr/src/app && cd app && npm install --legacy-peer-deps && npm run build
 
-	## Install app packages
-	RUN npm install
+	## Build server
+	RUN cd /usr/src/app && cd server && npm install
 
-	## open port 3000
-	EXPOSE 3000
 
-	## Start node server
+	EXPOSE 8080
+	CMD [ "node", "server/src/server.js" ]
 
-	ENV NODE_ENV ${node_env}
+	# We need to add our NGINX template to the container for startup,
+	# and configuration.
+	COPY ./conf/nginx.conf /etc/nginx/templates/default.conf.template
 
-	IF [ "$node_env" = "development" ] 
-		CMD ["npm", "run", "dev"]
-	ELSE
-		CMD ["npm", "run", "build"]
-	END
-
-	SAVE IMAGE --push ${docker_registry}/${service}_node_app:${version}
+	SAVE IMAGE --push ${docker_registry}/${service}_web_server:v${version}
