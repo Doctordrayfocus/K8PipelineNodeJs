@@ -73,17 +73,17 @@ build:
 deploy:
 	FROM alpine/doctl:1.22.2
 	# setup kubectl
-	ARG env='dev'
-	ARG service='sample'
 	ARG DIGITALOCEAN_ACCESS_TOKEN=""
-	ARG apptype='nodejs'
+	ARG service=""
+	ARG envs=""
 	ARG version=""
+	ARG template=""
 
 	COPY ./environments ${service}/environments
 
 	## Update apptemplate.yaml with latest versions
 
-	DO nodejs_kubernetes_engine+NODEJSAPP --service=$service --version=$version --env=$envs 
+	DO nodejs_kubernetes_engine+NODEJSAPP --template=$template --service=$service --envs=$envs
 
 	RUN kubectl version --client
 	# doctl authenticating
