@@ -6,6 +6,7 @@ NODEJSAPP:
     ARG env='prod'
     ARG dir="./$service/environments/$env"
     ARG file="$dir/app-template.yaml"
+    ARG template=''
     ARG OUTPUT="$template"
 	RUN mkdir -p $dir
   RUN echo "$OUTPUT" > "$file"
