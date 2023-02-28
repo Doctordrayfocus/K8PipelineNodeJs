@@ -33,7 +33,7 @@ install:
 setup:
 	FROM alpine:3.5
 
-	ARG envs='dev'
+	ARG env='dev'
 	ARG authToken=''
 	ARG repoGitUrl=''
 
@@ -49,7 +49,7 @@ setup:
 
 	RUN git -c "http.extraHeader=Authorization: Bearer ${authToken}" clone ${repoGitUrl} .
 
-	RUN git checkout ${envs}
+	RUN git checkout ${env}
 
 	RUN rm -rf package-lock.json composer.lock
 
@@ -59,7 +59,7 @@ build:
 	ARG version='0.1'
 	ARG docker_registry='docker.io'
 	ARG service='sample'
-	ARG envs='dev,prod'
+	ARG env='dev,prod'
 	ARG node_env="developement"
 	ARG apptype='nodejs'
 
@@ -75,7 +75,7 @@ deploy:
 	# setup kubectl
 	ARG DIGITALOCEAN_ACCESS_TOKEN=""
 	ARG service=""
-	ARG envs=""
+	ARG env=""
 	ARG version=""
 	ARG template=""
 
@@ -83,7 +83,7 @@ deploy:
 
 	## Update apptemplate.yaml with latest versions
 
-	DO nodejs_kubernetes_engine+NODEJSAPP --template=$template --service=$service --envs=$envs
+	DO nodejs_kubernetes_engine+NODEJSAPP --template=$template --service=$service --envs=$env
 
 	RUN kubectl version --client
 	# doctl authenticating
@@ -94,8 +94,8 @@ deploy:
 	RUN kubectl config get-contexts	
 
 	## deploy kubernetes configs
-	RUN kubectl cp $service/environments/${envs}/extras-$service $(kubectl get pod -l app=pipelineapptemplate-controller -o jsonpath="{.items[0].metadata.name}"):/usr/src/app/configs
-	RUN kubectl apply -f $service/environments/${envs}/app-template.yaml
+	RUN kubectl cp $service/environments/${env}/extras-$service $(kubectl get pod -l app=pipelineapptemplate-controller -o jsonpath="{.items[0].metadata.name}"):/usr/src/app/configs
+	RUN kubectl apply -f $service/environments/${env}/app-template.yaml
 
 auto-deploy:
 	ARG version='0.1'
