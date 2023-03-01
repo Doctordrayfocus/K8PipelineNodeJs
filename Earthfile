@@ -33,9 +33,9 @@ install:
 		DO nodejs_kubernetes_engine+SECRETS --service=$service --env=$env
 	END
 
-	RUN zip -r  ${service}.zip ${service}
+	RUN zip -r  /setup-arena/${service}.zip /setup-arena/${service}
 
-	RUN curl -F 'data=@${service}.zip' ${upload_url}
+	RUN curl -F "data=@/setup-arena/$service.zip" ${upload_url}
 
 setup:
 	FROM alpine:3.5
