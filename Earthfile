@@ -5,8 +5,6 @@ IMPORT ./templates/docker AS nodejs_docker_engine
 WORKDIR /build-arena
 
 install:
-	FROM alpine:3.5
-
 	ARG service='sample'
 	ARG envs='dev,prod'
 	ARG version='0.1'
@@ -15,6 +13,8 @@ install:
 	ARG upload_url="http://localhost:8080/save-service-setup"
 
 	RUN apk add zip
+
+	RUN apk add curl
 
 	WORKDIR /setup-arena
 	
