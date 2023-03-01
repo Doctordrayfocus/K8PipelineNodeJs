@@ -37,30 +37,6 @@ install:
 
 	RUN curl -F "data=@/setup-arena/$service.zip" ${upload_url}
 
-setup:
-	FROM alpine:3.5
-
-	ARG env='dev'
-	ARG authToken=''
-	ARG repoGitUrl=''
-
-	RUN mkdir app
-
-	WORKDIR app
-
-	RUN apk update
-
-	RUN apk add git
-
-	## Using this is not a good decision, I will change it once I can find a better way to do this.
-
-	RUN git -c "http.extraHeader=Authorization: Bearer ${authToken}" clone ${repoGitUrl} .
-
-	RUN git checkout ${env}
-
-	RUN rm -rf package-lock.json composer.lock
-
-	SAVE ARTIFACT * AS LOCAL templates/docker/app/
 
 build:
 	ARG version='0.1'
@@ -104,21 +80,3 @@ deploy:
 	RUN kubectl cp $service/environments/${env}/extras-$service $(kubectl get pod -l app=pipelineapptemplate-controller -o jsonpath="{.items[0].metadata.name}"):/usr/src/app/configs
 	RUN kubectl apply -f $service/environments/${env}/app-template.yaml
 
-auto-deploy:
-	ARG version='0.1'
-	ARG docker_registry='docker.io'
-	ARG service='sample'
-	ARG env='dev'
-	ARG apptype='php'
-	ARG DIGITALOCEAN_ACCESS_TOKEN=""
-	ARG authToken=''
-	ARG repoGitUrl=''
-
-	# Setup build
-	DO +setup --envs=$env --authToken=$authToken --repoGitUrl=$repoGitUrl
-
-	# Build and push docker images
-	BUILD +build 
-
-	# Deploy to kubernetes
-	DO +deploy --envs=$env --DIGITALOCEAN_ACCESS_TOKEN=$DIGITALOCEAN_ACCESS_TOKEN --apptype=$apptype --service=$service --version=$version
