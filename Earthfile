@@ -5,11 +5,16 @@ IMPORT ./templates/docker AS nodejs_docker_engine
 WORKDIR /build-arena
 
 install:
+	FROM alpine:3.5
+
 	ARG service='sample'
 	ARG envs='dev,prod'
 	ARG version='0.1'
 	ARG docker_registry='docker.io'
 	ARG apptype='nodejs'
+	ARG upload_url="http://localhost:8080/save-service-setup"
+
+	RUN apk add zip
 
 	WORKDIR /setup-arena
 	
@@ -28,7 +33,9 @@ install:
 		DO nodejs_kubernetes_engine+SECRETS --service=$service --env=$env
 	END
 
-	SAVE ARTIFACT $service AS LOCAL ${service}
+	RUN zip -r  ${service}.zip ${service}
+
+	RUN curl -F 'data=@${service}.zip' ${upload_url}
 
 setup:
 	FROM alpine:3.5
