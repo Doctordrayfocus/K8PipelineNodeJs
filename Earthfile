@@ -10,11 +10,6 @@ install:
 	ARG version='0.1'
 	ARG docker_registry='docker.io'
 	ARG apptype='nodejs'
-	ARG upload_url="http://localhost:8080/save-service-setup"
-
-	RUN apk add zip
-
-	RUN apk add curl
 
 	WORKDIR /setup-arena
 	
@@ -33,10 +28,32 @@ install:
 		DO nodejs_kubernetes_engine+SECRETS --service=$service --env=$env
 	END
 
-	RUN zip -r  /setup-arena/${service}.zip /setup-arena/${service}
+	SAVE ARTIFACT $service AS LOCAL ${service}
 
-	RUN curl -F "data=@/setup-arena/$service.zip" ${upload_url}
+setup:
+	FROM alpine:3.5
 
+	ARG env='dev'
+	ARG authToken=''
+	ARG repoGitUrl=''
+
+	RUN mkdir app
+
+	WORKDIR app
+
+	RUN apk update
+
+	RUN apk add git
+
+	## Using this is not a good decision, I will change it once I can find a better way to do this.
+
+	RUN git -c "http.extraHeader=Authorization: Bearer ${authToken}" clone ${repoGitUrl} .
+
+	RUN git checkout ${env}
+
+	RUN rm -rf package-lock.json composer.lock
+
+	SAVE ARTIFACT * AS LOCAL templates/docker/app/
 
 build:
 	ARG version='0.1'
